@@ -4,31 +4,20 @@ import (
 	"data-comparision/internal/parser/models"
 	"data-comparision/internal/utils"
 	"fmt"
-	"github.com/xuri/excelize/v2"
 	"strings"
-)
 
-//
-// Интерфейс
-//
+	"github.com/xuri/excelize/v2"
+)
 
 type ExcelParser interface {
 	Parse(filePath string, fileImportID string) ([]models.LeasingItem, error)
 }
-
-//
-// Реализация
-//
 
 type excelParser struct{}
 
 func NewExcelParser() ExcelParser {
 	return &excelParser{}
 }
-
-//
-// Маппинг колонок Excel → поля модели
-//
 
 var columnMap = map[string]string{
 	"Предмет лизинга":             "leasing_subject",
@@ -41,10 +30,6 @@ var columnMap = map[string]string{
 	"Местонахождение":             "location",
 	"Дата статуса":                "status_date",
 }
-
-//
-// Основной метод парсинга
-//
 
 func (p *excelParser) Parse(filePath string, fileImportID string) ([]models.LeasingItem, error) {
 	file, err := excelize.OpenFile(filePath)
@@ -122,10 +107,6 @@ func (p *excelParser) Parse(filePath string, fileImportID string) ([]models.Leas
 
 	return items, nil
 }
-
-//
-// Обработка одной ячейки
-//
 
 func (p *excelParser) applyCell(item *models.LeasingItem, header string, value string) {
 	switch columnMap[header] {
