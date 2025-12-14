@@ -17,7 +17,6 @@ func NewLeasingItemRepository(db *sqlx.DB) *LeasingItemRepository {
 	return &LeasingItemRepository{db: db}
 }
 
-// Batch insert
 func (r *LeasingItemRepository) SaveBatch(ctx context.Context, items []models.LeasingItem) error {
 	if len(items) == 0 {
 		return nil
@@ -59,7 +58,6 @@ func (r *LeasingItemRepository) SaveBatch(ctx context.Context, items []models.Le
 	return err
 }
 
-// Получить все строки по импорту
 func (r *LeasingItemRepository) FindByImport(ctx context.Context, importID string) ([]models.LeasingItem, error) {
 	var items []models.LeasingItem
 	err := r.db.SelectContext(ctx, &items, `SELECT * FROM leasing_items WHERE file_import_id=$1`, importID)

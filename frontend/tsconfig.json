@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",           // async/await работает с ES2017+
+    "lib": ["DOM", "ES2017"],     // подключаем Promise и современные API
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "jsx": "react-jsx",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  }
+}
