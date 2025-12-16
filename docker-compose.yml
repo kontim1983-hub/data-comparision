@@ -1,6 +1,16 @@
 services:
   postgres:
     image: postgres:15
+    container_name: postgres-1
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: leasing
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
   backend:
     build:
       context: ./backend
@@ -12,6 +22,14 @@ services:
       - "8080:8080"
     depends_on:
       - postgres
+    command: >
+      sh -c "
+        until nc -z postgres 5432; do
+          echo 'Waiting for Postgres...';
+          sleep 2;
+        done;
+        /leasing-backend
+      "
 
   frontend:
     build:
@@ -22,3 +40,6 @@ services:
       - "3000:3000"
     depends_on:
       - backend
+
+volumes:
+  pgdata:

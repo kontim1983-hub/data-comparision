@@ -1,32 +1,24 @@
-# Build stage
+# Stage 1: Build
+# Используем golang 1.25 alpine и даём alias "builder"
 FROM golang:1.25-alpine AS builder
 
 WORKDIR /app
-
-# Установим git и bash для go modules
 RUN apk add --no-cache git bash
 
-# Копируем go.mod и go.sum
 COPY go.mod go.sum ./
-
-# Скачиваем зависимости
 RUN go mod download
 
-# Копируем весь код
 COPY . .
 
-# Сборка бинарника
 RUN go build -o /leasing-backend cmd/server/main.go
 
-# Final stage
+# Stage 2: Production
 FROM alpine:3.18
 
 WORKDIR /app
 
-# Копируем бинарник
 COPY --from=builder /leasing-backend /leasing-backend
-
-# Создаём папку uploads для временных файлов
+RUN chmod +x /leasing-backend
 RUN mkdir -p ./uploads
 
 EXPOSE 8080

@@ -19,6 +19,13 @@ RUN npx react-scripts build
 
 # Stage 2: Production
 FROM nginx:alpine
+
+# Копируем собранный фронтенд
 COPY --from=builder /app/build /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Прописываем, чтобы Nginx слушал 3000
+RUN sed -i 's/listen       80;/listen       3000;/' /etc/nginx/conf.d/default.conf
+
 EXPOSE 3000
 CMD ["nginx", "-g", "daemon off;"]

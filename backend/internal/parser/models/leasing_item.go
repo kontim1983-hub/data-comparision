@@ -1,28 +1,46 @@
 package models
 
-import "time"
+import (
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
+	"time"
+)
 
 type LeasingItem struct {
-	ID           string `db:"id"`
-	FileImportID string `db:"file_import_id"`
+	ID                   string
+	FileImportID         string
+	BusinessKey          string
+	VIN                  string
+	LeasingContract      string
+	LeasingSubject       string
+	ApprovedPrice        *float64 // ✅ Теперь указатель (может быть NULL)
+	InitialApprovedPrice *float64 // ✅ Указатель
+	SalePrice            *float64 // ✅ Указатель
+	Status               string
+	Location             string
+	StatusDate           *time.Time // ✅ Используем time.Time вместо string
+	Data                 JSONMap
+}
 
-	// --- Business key ---
-	BusinessKey     string `db:"business_key"`
-	VIN             string `db:"vin"`
-	LeasingContract string `db:"leasing_contract"`
+// JSONMap остаётся как было
+type JSONMap map[string]interface{}
 
-	// --- Core fields ---
-	LeasingSubject string `db:"leasing_subject"` // 👈 НОВОЕ ПОЛЕ
+func (j JSONMap) Value() (driver.Value, error) {
+	if j == nil {
+		return nil, nil
+	}
+	return json.Marshal(j)
+}
 
-	ApprovedPrice        *float64   `db:"approved_price"`
-	InitialApprovedPrice *float64   `db:"initial_approved_price"`
-	SalePrice            *float64   `db:"sale_price"`
-	Status               string     `db:"status"`
-	Location             string     `db:"location"`
-	StatusDate           *time.Time `db:"status_date"`
-
-	// --- Other fields ---
-	Data map[string]interface{} `db:"data" json:"data"`
-
-	CreatedAt time.Time `db:"created_at"`
+func (j *JSONMap) Scan(value interface{}) error {
+	if value == nil {
+		*j = nil
+		return nil
+	}
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New("failed to scan JSONMap: value is not []byte")
+	}
+	return json.Unmarshal(bytes, j)
 }

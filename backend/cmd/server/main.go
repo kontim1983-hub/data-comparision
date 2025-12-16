@@ -2,7 +2,8 @@ package main
 
 import (
 	"data-comparision/internal/api"
-	db "data-comparision/internal/bd/migrations"
+	"data-comparision/internal/bd"
+	_ "data-comparision/internal/bd"
 	"data-comparision/internal/parser"
 	"data-comparision/internal/repository"
 	"data-comparision/internal/service"
@@ -10,23 +11,47 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 )
 
 func main() {
-	dsn := os.Getenv("DATABASE_URL")
-	dbConn, err := db.InitPostgres(dsn)
-	if err != nil {
-		log.Fatal(err)
+	// Подключение к БД
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		dbURL = "postgres://postgres:postgres@localhost:5432/leasing?sslmode=disable"
 	}
 
-	fileRepo := repository.NewFileImportRepository(dbConn)
-	itemRepo := repository.NewLeasingItemRepository(dbConn)
-	parserService := parser.NewExcelParser()
+	database, err := sqlx.Connect("postgres", dbURL)
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer database.Close()
 
-	importService := service.NewImportService(fileRepo, itemRepo, parserService)
-	router := gin.Default()
+	// ✅ Применяем схему (создаём таблицы)
+	if _, err := database.Exec(bd.Schema); err != nil {
+		log.Fatalf("Failed to apply schema: %v", err)
+	}
+	log.Println("Database schema applied successfully")
 
-	api.InitRouter(router, fileRepo, itemRepo, importService)
+	// Инициализация repositories
+	fileRepo := repository.NewFileImportRepository(database)
+	itemRepo := repository.NewLeasingItemRepository(database)
 
-	router.Run(":8080")
+	excelParser := parser.NewExcelParser()
+
+	importService := service.NewImportService(
+		fileRepo,
+		itemRepo,
+		excelParser,
+	)
+
+	// Инициализация роутера
+	r := gin.Default()
+	api.InitRouter(r, fileRepo, itemRepo, importService)
+
+	// Запуск сервера
+	if err := r.Run(":8080"); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
 }
